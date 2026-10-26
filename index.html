@@ -3,22 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estimation Immobilière Pro</title>
-    <!-- Tailwind CSS -->
+    <title>Estimation Immobilière</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#1e293b',
-                        accent: '#0284c7',
-                    }
-                }
-            }
+            theme: { extend: { colors: { primary: '#1e293b', accent: '#0284c7' } } }
         }
     </script>
-    <!-- React & Lucide Icons -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -29,6 +20,14 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+
+        // Composant réutilisable pour afficher des champs avec une étiquette fixe
+        const Field = ({ label, type = 'text', value, onChange }) => (
+            <div className="flex flex-col mb-3 w-full">
+                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">{label}</label>
+                <input type={type} value={value} onChange={onChange} className="w-full p-3 border border-slate-200 rounded-xl text-sm bg-white text-slate-800 focus:border-accent outline-none" />
+            </div>
+        );
 
         function App() {
             const [view, setView] = useState('home'); 
@@ -49,10 +48,8 @@
 
             function getEmptyClient() {
                 return {
-                    id: Date.now(),
-                    date: new Date().toLocaleDateString('fr-FR'),
-                    nom: '', prenom: '', telephone: '', email: '', adresse: '',
-                    typeBien: 'Appartement',
+                    id: Date.now(), date: new Date().toLocaleDateString('fr-FR'),
+                    nom: '', prenom: '', telephone: '', email: '', adresse: '', typeBien: 'Appartement',
                     surfaceHabitable: '', surfaceCarrez: '', annexes: { terrasse: '', balcon: '', jardin: '', cave: '', garage: '' },
                     distribution: { pieces: '', chambres: '', sainte: '', hauteurPlafond: '' },
                     env: { exposition: '', visAVis: '', bruit: '' },
@@ -70,7 +67,7 @@
 
             const handleSave = () => {
                 if (!currentClient.nom && !currentClient.prenom) {
-                    alert('Veuillez renseigner au moins le nom ou le prénom du client.');
+                    alert('Renseignez au moins un nom ou prénom.');
                     return;
                 }
                 const existingIndex = clients.findIndex(c => c.id === currentClient.id);
@@ -81,12 +78,14 @@
                 } else {
                     setClients([currentClient, ...clients]);
                 }
-                alert('Estimation enregistrée avec succès !');
+                alert('Estimation sauvegardée localement.');
                 setView('home');
             };
 
             const handleMediaUpload = (e) => {
                 const files = Array.from(e.target.files);
+                if (files.length === 0) return;
+                
                 Promise.all(files.map(file => {
                     return new Promise((resolve) => {
                         const reader = new FileReader();
@@ -98,213 +97,142 @@
                 });
             };
 
-            const tabTitles = {
-                client: '1. Informations Client',
-                bien: '2. Superficie & Distribution',
-                technique: '3. Équipements & État',
-                financier: '4. Finances & Projet',
-                medias: '5. Photos & Vidéos'
-            };
-
             return (
                 <div className="min-h-screen flex flex-col max-w-md mx-auto bg-white shadow-xl">
-                    {/* Header */}
                     <header className="bg-primary text-white p-4 flex justify-between items-center sticky top-0 z-50">
                         <div className="flex items-center space-x-2">
                             <i data-lucide="building-2" className="w-6 h-6 text-accent"></i>
-                            <span className="font-bold text-lg tracking-wide">ImmoEstime</span>
+                            <span className="font-bold text-lg">ImmoEstime</span>
                         </div>
                         {view !== 'home' && (
-                            <button onClick={() => setView('home')} className="p-2 hover:bg-slate-800 rounded-full transition flex items-center space-x-1 text-xs">
+                            <button onClick={() => setView('home')} className="p-2 hover:bg-slate-800 rounded-full">
                                 <i data-lucide="home" className="w-5 h-5"></i>
-                                <span>Accueil</span>
                             </button>
                         )}
                     </header>
 
-                    {/* Main Content */}
                     <main className="flex-1 overflow-y-auto p-4 pb-20">
-                        {/* 1. ÉCRAN ACCUEIL */}
                         {view === 'home' && (
-                            <div className="flex flex-col items-center justify-center h-[75vh] space-y-8">
-                                <div className="text-center space-y-2">
-                                    <h1 className="text-2xl font-bold text-slate-800">Estimation sur site</h1>
-                                    <p className="text-sm text-slate-500">Accompagnement professionnel pour vos visites</p>
-                                </div>
-                                <div className="flex flex-col w-full space-y-4 px-6">
-                                    <button 
-                                        onClick={() => { setCurrentClient(getEmptyClient()); setActiveTab('client'); setView('form'); }}
-                                        className="flex items-center justify-center space-x-3 bg-accent text-white py-4 px-6 rounded-xl shadow-lg hover:bg-sky-700 transition font-medium text-lg">
-                                        <i data-lucide="plus-circle" className="w-6 h-6"></i>
-                                        <span>Nouveau Client</span>
-                                    </button>
-                                    <button 
-                                        onClick={() => setView('list')}
-                                        className="flex items-center justify-center space-x-3 bg-slate-100 text-slate-700 py-4 px-6 rounded-xl hover:bg-slate-200 transition font-medium text-lg">
-                                        <i data-lucide="folder-open" className="w-6 h-6"></i>
-                                        <span>Anciens Clients ({clients.length})</span>
-                                    </button>
-                                </div>
+                            <div className="flex flex-col items-center justify-center h-[70vh] space-y-6">
+                                <button onClick={() => { setCurrentClient(getEmptyClient()); setActiveTab('client'); setView('form'); }}
+                                        className="w-full flex items-center justify-center space-x-3 bg-accent text-white py-4 px-6 rounded-xl shadow-lg">
+                                    <i data-lucide="plus-circle" className="w-6 h-6"></i>
+                                    <span className="font-medium text-lg">Nouvelle Estimation</span>
+                                </button>
+                                <button onClick={() => setView('list')}
+                                        className="w-full flex items-center justify-center space-x-3 bg-slate-100 text-slate-700 py-4 px-6 rounded-xl border">
+                                    <i data-lucide="folder-open" className="w-6 h-6"></i>
+                                    <span className="font-medium text-lg">Dossiers ({clients.length})</span>
+                                </button>
                             </div>
                         )}
 
-                        {/* 2. LISTE DES CLIENTS */}
                         {view === 'list' && (
                             <div className="space-y-4">
-                                <h2 className="text-xl font-bold text-slate-800 mb-4">Estimations Enregistrées</h2>
-                                {clients.length === 0 ? (
-                                    <p className="text-slate-400 text-center py-10">Aucun client enregistré.</p>
-                                ) : (
-                                    clients.map(c => (
-                                        <div key={c.id} onClick={() => { setCurrentClient(c); setActiveTab('client'); setView('form'); }} 
-                                             className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center">
-                                            <div>
-                                                <h3 className="font-bold text-slate-800">{c.nom} {c.prenom} <span className="text-xs font-normal text-accent bg-sky-50 px-2 py-0.5 rounded-full ml-1">{c.typeBien}</span></h3>
-                                                <p className="text-xs text-slate-500">{c.adresse || 'Adresse non renseignée'} • {c.date}</p>
-                                            </div>
-                                            <i data-lucide="chevron-right" className="w-5 h-5 text-slate-400"></i>
-                                        </div>
-                                    ))
-                                )}
+                                {clients.map(c => (
+                                    <div key={c.id} onClick={() => { setCurrentClient(c); setActiveTab('client'); setView('form'); }} 
+                                         className="bg-white border p-4 rounded-xl shadow-sm cursor-pointer">
+                                        <h3 className="font-bold text-slate-800">{c.nom} {c.prenom} <span className="text-xs font-normal text-accent bg-sky-50 px-2 py-0.5 rounded-full ml-1">{c.typeBien}</span></h3>
+                                        <p className="text-xs text-slate-500">{c.adresse} • {c.date}</p>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
-                        {/* 3. FORMULAIRE DE SAISIE */}
                         {view === 'form' && (
                             <div className="space-y-6">
-                                {/* Navigation par onglets */}
-                                <div className="flex overflow-x-auto space-x-2 pb-2 border-b border-slate-100 no-scrollbar">
-                                    {[
-                                        { id: 'client', label: 'Client', icon: 'user' },
-                                        { id: 'bien', label: 'Bien', icon: 'home' },
-                                        { id: 'technique', label: 'Technique', icon: 'cpu' },
-                                        { id: 'financier', label: 'Financier', icon: 'euro' },
-                                        { id: 'medias', label: 'Médias', icon: 'camera' }
-                                    ].map(tab => (
-                                        <button 
-                                            key={tab.id}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === tab.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                                            <i data-lucide={tab.icon} className="w-4 h-4"></i>
-                                            <span>{tab.label}</span>
+                                <div className="flex overflow-x-auto space-x-2 pb-2 border-b no-scrollbar">
+                                    {['client', 'bien', 'technique', 'financier', 'medias'].map(tab => (
+                                        <button key={tab} onClick={() => setActiveTab(tab)}
+                                            className={`px-3 py-2 rounded-lg text-xs font-semibold capitalize ${activeTab === tab ? 'bg-primary text-white' : 'bg-slate-100'}`}>
+                                            {tab}
                                         </button>
                                     ))}
                                 </div>
 
-                                {/* Indicateur clair de l'onglet actif */}
-                                <div className="bg-sky-50 border-l-4 border-accent p-3 rounded-r-xl">
-                                    <h2 className="text-sm font-bold text-sky-900">{tabTitles[activeTab]}</h2>
-                                </div>
-
-                                {/* Contenu des Onglets */}
-                                <div className="space-y-4">
+                                <div>
                                     {activeTab === 'client' && (
-                                        <div className="space-y-3">
-                                            <label className="block text-xs font-semibold text-slate-500 uppercase">Type de bien</label>
-                                            <select 
-                                                value={currentClient.typeBien} 
-                                                onChange={e => setCurrentClient({...currentClient, typeBien: e.target.value})} 
-                                                className="w-full p-3 border rounded-xl text-sm bg-white font-medium text-slate-700">
-                                                <option value="Appartement">Appartement</option>
-                                                <option value="Maison">Maison</option>
-                                                <option value="Box / Garage">Box / Garage</option>
-                                                <option value="Terrain">Terrain</option>
-                                                <option value="Commerce / Bureau">Commerce / Bureau</option>
-                                                <option value="Immeuble">Immeuble</option>
-                                            </select>
-
-                                            <input type="text" placeholder="Nom" value={currentClient.nom} onChange={e => setCurrentClient({...currentClient, nom: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Prénom" value={currentClient.prenom} onChange={e => setCurrentClient({...currentClient, prenom: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="tel" placeholder="Téléphone" value={currentClient.telephone} onChange={e => setCurrentClient({...currentClient, telephone: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="email" placeholder="Email" value={currentClient.email} onChange={e => setCurrentClient({...currentClient, email: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Adresse du bien" value={currentClient.adresse} onChange={e => setCurrentClient({...currentClient, adresse: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
-                                        </div>
+                                        <>
+                                            <div className="flex flex-col mb-3">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Type de bien</label>
+                                                <select value={currentClient.typeBien} onChange={e => setCurrentClient({...currentClient, typeBien: e.target.value})} className="p-3 border rounded-xl bg-white text-sm">
+                                                    <option>Appartement</option><option>Maison</option><option>Box / Garage</option><option>Terrain</option><option>Commerce / Bureau</option><option>Immeuble</option>
+                                                </select>
+                                            </div>
+                                            <Field label="Nom" value={currentClient.nom} onChange={e => setCurrentClient({...currentClient, nom: e.target.value})} />
+                                            <Field label="Prénom" value={currentClient.prenom} onChange={e => setCurrentClient({...currentClient, prenom: e.target.value})} />
+                                            <Field label="Téléphone" type="tel" value={currentClient.telephone} onChange={e => setCurrentClient({...currentClient, telephone: e.target.value})} />
+                                            <Field label="Adresse du bien" value={currentClient.adresse} onChange={e => setCurrentClient({...currentClient, adresse: e.target.value})} />
+                                        </>
                                     )}
 
                                     {activeTab === 'bien' && (
-                                        <div className="space-y-4">
+                                        <>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input type="text" placeholder="Surf. Habitable (m²)" value={currentClient.surfaceHabitable} onChange={e => setCurrentClient({...currentClient, surfaceHabitable: e.target.value})} className="p-3 border rounded-xl text-sm" />
-                                                <input type="text" placeholder="Surf. Carrez (m²)" value={currentClient.surfaceCarrez} onChange={e => setCurrentClient({...currentClient, surfaceCarrez: e.target.value})} className="p-3 border rounded-xl text-sm" />
+                                                <Field label="Surf. Habitable (m²)" type="number" value={currentClient.surfaceHabitable} onChange={e => setCurrentClient({...currentClient, surfaceHabitable: e.target.value})} />
+                                                <Field label="Loi Carrez (m²)" type="number" value={currentClient.surfaceCarrez} onChange={e => setCurrentClient({...currentClient, surfaceCarrez: e.target.value})} />
                                             </div>
                                             <div className="grid grid-cols-3 gap-2">
-                                                <input type="text" placeholder="Terrasse (m²)" value={currentClient.annexes.terrasse} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, terrasse: e.target.value}})} className="p-3 border rounded-xl text-sm" />
-                                                <input type="text" placeholder="Balcon (m²)" value={currentClient.annexes.balcon} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, balcon: e.target.value}})} className="p-3 border rounded-xl text-sm" />
-                                                <input type="text" placeholder="Jardin (m²)" value={currentClient.annexes.jardin} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, jardin: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <Field label="Pièces" type="number" value={currentClient.distribution.pieces} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, pieces: e.target.value}})} />
+                                                <Field label="Chambres" type="number" value={currentClient.distribution.chambres} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, chambres: e.target.value}})} />
+                                                <Field label="Salles d'eau" type="number" value={currentClient.distribution.sainte} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, sainte: e.target.value}})} />
                                             </div>
-                                            <div className="grid grid-cols-3 gap-2">
-                                                <input type="number" placeholder="Pièces" value={currentClient.distribution.pieces} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, pieces: e.target.value}})} className="p-3 border rounded-xl text-sm" />
-                                                <input type="number" placeholder="Chambres" value={currentClient.distribution.chambres} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, chambres: e.target.value}})} className="p-3 border rounded-xl text-sm" />
-                                                <input type="number" placeholder="Salles d'eau" value={currentClient.distribution.sainte} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, sainte: e.target.value}})} className="p-3 border rounded-xl text-sm" />
-                                            </div>
-                                            <input type="text" placeholder="Hauteur sous plafond" value={currentClient.distribution.hauteurPlafond} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, hauteurPlafond: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Orientation / Exposition" value={currentClient.env.exposition} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, exposition: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Vis-à-vis / Nuisances sonores" value={currentClient.env.bruit} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, bruit: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                        </div>
+                                            <Field label="Terrasse / Balcon (m²)" value={currentClient.annexes.terrasse} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, terrasse: e.target.value}})} />
+                                            <Field label="Exposition / Vue" value={currentClient.env.exposition} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, exposition: e.target.value}})} />
+                                            <Field label="Vis-à-vis / Bruit" value={currentClient.env.bruit} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, bruit: e.target.value}})} />
+                                        </>
                                     )}
 
                                     {activeTab === 'technique' && (
-                                        <div className="space-y-4">
-                                            <input type="text" placeholder="Chauffage (Type, Énergie, Âge)" value={currentClient.chauffage.type} onChange={e => setCurrentClient({...currentClient, chauffage: {...currentClient.chauffage, type: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Menuiseries & Isolation" value={currentClient.menuiseries.vitrage} onChange={e => setCurrentClient({...currentClient, menuiseries: {...currentClient.menuiseries, vitrage: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <div className="space-y-2 pt-2 bg-slate-50 p-3 rounded-xl border">
-                                                <label className="flex items-center space-x-2 text-sm">
-                                                    <input type="checkbox" checked={currentClient.equipements.cuisineEquipee} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, cuisineEquipee: e.target.checked}})} className="rounded text-accent w-4 h-4" />
-                                                    <span>Cuisine équipée</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 text-sm">
-                                                    <input type="checkbox" checked={currentClient.equipements.stationnement} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, stationnement: e.target.checked}})} className="rounded text-accent w-4 h-4" />
-                                                    <span>Stationnement / Garage</span>
-                                                </label>
-                                                <label className="flex items-center space-x-2 text-sm">
-                                                    <input type="checkbox" checked={currentClient.equipements.borneRecharge} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, borneRecharge: e.target.checked}})} className="rounded text-accent w-4 h-4" />
-                                                    <span>Borne de recharge VE</span>
-                                                </label>
+                                        <>
+                                            <Field label="Chauffage & Climatisation" value={currentClient.chauffage.type} onChange={e => setCurrentClient({...currentClient, chauffage: {...currentClient.chauffage, type: e.target.value}})} />
+                                            <Field label="Menuiseries / Isolation" value={currentClient.menuiseries.vitrage} onChange={e => setCurrentClient({...currentClient, menuiseries: {...currentClient.menuiseries, vitrage: e.target.value}})} />
+                                            
+                                            <div className="flex flex-col mb-4 p-3 border rounded-xl bg-slate-50">
+                                                <label className="text-xs font-bold text-slate-500 mb-2">Équipements présents</label>
+                                                <label className="flex items-center space-x-2 mb-2 text-sm"><input type="checkbox" checked={currentClient.equipements.cuisineEquipee} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, cuisineEquipee: e.target.checked}})} /><span>Cuisine équipée</span></label>
+                                                <label className="flex items-center space-x-2 mb-2 text-sm"><input type="checkbox" checked={currentClient.equipements.stationnement} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, stationnement: e.target.checked}})} /><span>Stationnement / Garage</span></label>
                                             </div>
-                                            <textarea placeholder="Travaux réalisés (Nature, dates, factures)" value={currentClient.travaux.nature} onChange={e => setCurrentClient({...currentClient, travaux: {...currentClient.travaux, nature: e.target.value}})} className="w-full p-3 border rounded-xl text-sm h-20"></textarea>
-                                            <textarea placeholder="État général (Humidité, fissures, toiture)" value={currentClient.etat.notesEtat} onChange={e => setCurrentClient({...currentClient, etat: {...currentClient.etat, notesEtat: e.target.value}})} className="w-full p-3 border rounded-xl text-sm h-20"></textarea>
-                                        </div>
+                                            
+                                            <div className="flex flex-col mb-3">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">Travaux / Rénovations</label>
+                                                <textarea className="p-3 border rounded-xl text-sm w-full" rows="2" value={currentClient.travaux.nature} onChange={e => setCurrentClient({...currentClient, travaux: {...currentClient.travaux, nature: e.target.value}})}></textarea>
+                                            </div>
+                                            <div className="flex flex-col mb-3">
+                                                <label className="text-xs font-bold text-slate-500 mb-1 ml-1">État général (fissures, humidité)</label>
+                                                <textarea className="p-3 border rounded-xl text-sm w-full" rows="2" value={currentClient.etat.notesEtat} onChange={e => setCurrentClient({...currentClient, etat: {...currentClient.etat, notesEtat: e.target.value}})}></textarea>
+                                            </div>
+                                        </>
                                     )}
 
                                     {activeTab === 'financier' && (
-                                        <div className="space-y-4">
-                                            <input type="text" placeholder="Taxe foncière (€)" value={currentClient.charges.fonciere} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, fonciere: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Charges de copropriété (€/mois)" value={currentClient.charges.copro} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, copro: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Vie de la copro (Travaux votés...)" value={currentClient.copro.travauxVotes} onChange={e => setCurrentClient({...currentClient, copro: {...currentClient.copro, travauxVotes: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <input type="text" placeholder="Raison de la vente" value={currentClient.projet.raison} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, raison: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                        <>
+                                            <Field label="Taxe foncière (€)" type="number" value={currentClient.charges.fonciere} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, fonciere: e.target.value}})} />
+                                            <Field label="Charges de copropriété (€/mois)" type="number" value={currentClient.charges.copro} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, copro: e.target.value}})} />
+                                            <Field label="Projet / Motivation de vente" value={currentClient.projet.raison} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, raison: e.target.value}})} />
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input type="text" placeholder="Délai souhaité" value={currentClient.projet.delai} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, delai: e.target.value}})} className="p-3 border rounded-xl text-sm" />
-                                                <input type="text" placeholder="Prix attendu (€)" value={currentClient.projet.prixAttendu} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, prixAttendu: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <Field label="Délai souhaité" value={currentClient.projet.delai} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, delai: e.target.value}})} />
+                                                <Field label="Prix attendu (€)" type="number" value={currentClient.projet.prixAttendu} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, prixAttendu: e.target.value}})} />
                                             </div>
-                                        </div>
+                                        </>
                                     )}
 
                                     {activeTab === 'medias' && (
                                         <div className="space-y-4">
                                             <div className="grid grid-cols-2 gap-3">
-                                                {/* Bouton Appareil Photo Direct */}
-                                                <label className="flex flex-col items-center justify-center border-2 border-dashed border-accent p-4 rounded-xl cursor-pointer hover:bg-sky-50 transition bg-sky-50/50 text-accent">
-                                                    <i data-lucide="camera" className="w-6 h-6 mb-1"></i>
-                                                    <span className="text-xs font-semibold text-center">Prendre une photo</span>
+                                                <label className="flex flex-col items-center p-4 border-2 border-accent border-dashed rounded-xl bg-sky-50 text-accent cursor-pointer">
+                                                    <i data-lucide="camera" className="w-6 h-6 mb-1"></i><span className="text-xs font-bold">Prendre photo</span>
                                                     <input type="file" accept="image/*" capture="environment" onChange={handleMediaUpload} className="hidden" />
                                                 </label>
-
-                                                {/* Bouton Galerie / Fichiers */}
-                                                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 p-4 rounded-xl cursor-pointer hover:border-slate-400 transition bg-slate-50 text-slate-600">
-                                                    <i data-lucide="image" className="w-6 h-6 mb-1"></i>
-                                                    <span className="text-xs font-semibold text-center">Importer (Galerie)</span>
+                                                <label className="flex flex-col items-center p-4 border-2 border-slate-300 border-dashed rounded-xl bg-slate-50 cursor-pointer">
+                                                    <i data-lucide="image" className="w-6 h-6 mb-1"></i><span className="text-xs font-bold">Galerie</span>
                                                     <input type="file" accept="image/*,video/*" multiple onChange={handleMediaUpload} className="hidden" />
                                                 </label>
                                             </div>
-
-                                            <div className="grid grid-cols-3 gap-2 pt-2">
-                                                {currentClient.medias.map((m, index) => (
-                                                    <div key={index} className="relative aspect-square bg-slate-100 rounded-lg overflow-hidden border shadow-sm">
-                                                        {m.type.includes('video') ? (
-                                                            <video src={m.url} className="w-full h-full object-cover"></video>
-                                                        ) : (
-                                                            <img src={m.url} className="w-full h-full object-cover" />
-                                                        )}
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {currentClient.medias.map((m, i) => (
+                                                    <div key={i} className="aspect-square bg-slate-200 rounded-lg overflow-hidden">
+                                                        <img src={m.url} className="w-full h-full object-cover" />
                                                     </div>
                                                 ))}
                                             </div>
@@ -312,10 +240,8 @@
                                     )}
                                 </div>
 
-                                {/* Bouton Enregistrer */}
-                                <button onClick={handleSave} className="w-full bg-accent text-white py-4 rounded-xl shadow-lg hover:bg-sky-700 transition font-medium text-lg flex items-center justify-center space-x-2 mt-6">
-                                    <i data-lucide="check" className="w-5 h-5"></i>
-                                    <span>Enregistrer l'estimation</span>
+                                <button onClick={handleSave} className="w-full bg-accent text-white py-4 rounded-xl shadow-lg mt-4 font-bold flex justify-center space-x-2">
+                                    <i data-lucide="save" className="w-5 h-5"></i><span>Enregistrer le dossier</span>
                                 </button>
                             </div>
                         )}
