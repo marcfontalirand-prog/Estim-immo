@@ -62,7 +62,7 @@
 
             const handleSave = () => {
                 if (!currentClient.nom && !currentClient.prenom) {
-                    alert('Renseignez au moins un nom ou prénom.');
+                    alert('Nom ou prénom obligatoire.');
                     return;
                 }
                 const existingIndex = clients.findIndex(c => c.id === currentClient.id);
@@ -77,11 +77,59 @@
                 try {
                     localStorage.setItem('immo_clients', JSON.stringify(updatedClients));
                     setClients(updatedClients);
-                    alert('Estimation sauvegardée avec succès.');
-                    setView('home');
+                    setView('list');
                 } catch (e) {
-                    alert("Erreur : La mémoire de l'application est pleine. Supprimez d'anciennes estimations ou réduisez le nombre de photos.");
+                    alert("Mémoire pleine. Supprimez des photos ou d'anciens dossiers.");
                 }
+            };
+
+            const generatePlainText = (c) => {
+                return `FICHE ESTIMATION : ${c.typeBien}
+CLIENT: ${c.nom} ${c.prenom}
+TEL: ${c.telephone} | EMAIL: ${c.email}
+ADRESSE: ${c.adresse}
+
+--- BIEN ---
+Surfaces : ${c.surfaceHabitable}m² hab / ${c.surfaceCarrez}m² Carrez
+Distribution : ${c.distribution.pieces} Pièces, ${c.distribution.chambres} Chambres, ${c.distribution.sainte} SDB. Hauteur: ${c.distribution.hauteurPlafond}
+Annexes : Terrasse ${c.annexes.terrasse}m², Balcon ${c.annexes.balcon}m², Jardin ${c.annexes.jardin}m²
+Environnement : Expo ${c.env.exposition}, Vis-à-vis/Bruit: ${c.env.bruit}
+
+--- TECHNIQUE ---
+Chauffage : ${c.chauffage.type}
+Menuiseries : ${c.menuiseries.vitrage}
+Cuisine équipée: ${c.equipements.cuisineEquipee ? 'Oui' : 'Non'} | Stationnement: ${c.equipements.stationnement ? 'Oui' : 'Non'}
+Travaux réalisés : ${c.travaux.nature}
+État général : ${c.etat.notesEtat}
+
+--- FINANCIER & PROJET ---
+Foncier: ${c.charges.fonciere}€ | Copro: ${c.charges.copro}€/mois
+Projet: ${c.projet.raison} (Délai: ${c.projet.delai})
+Prix espéré par le vendeur: ${c.projet.prixAttendu}€`;
+            };
+
+            const handleShareText = async (c, e) => {
+                e.stopPropagation();
+                const text = generatePlainText(c);
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ title: `Fiche ${c.nom}`, text: text });
+                    } catch (err) { console.log(err); }
+                } else {
+                    navigator.clipboard.writeText(text);
+                    alert("Texte copié dans le presse-papier.");
+                }
+            };
+
+            const handleExportVCard = (c, e) => {
+                e.stopPropagation();
+                const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:${c.nom};${c.prenom};;;\nFN:${c.prenom} ${c.nom}\nTEL;TYPE=CELL:${c.telephone}\nEMAIL:${c.email}\nEND:VCARD`;
+                const blob = new Blob([vcard], { type: "text/vcard" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${c.nom}_${c.prenom}.vcf`;
+                a.click();
             };
 
             const handleMediaUpload = (e) => {
@@ -90,14 +138,13 @@
                 
                 Promise.all(files.map(file => {
                     return new Promise((resolve) => {
-                        // Compression de l'image pour éviter de saturer la mémoire
                         if (file.type.startsWith('image/')) {
                             const reader = new FileReader();
                             reader.onload = (event) => {
                                 const img = new Image();
                                 img.onload = () => {
                                     const canvas = document.createElement('canvas');
-                                    const MAX_WIDTH = 800; // Taille max optimisée
+                                    const MAX_WIDTH = 800;
                                     const scaleSize = MAX_WIDTH / img.width;
                                     canvas.width = MAX_WIDTH;
                                     canvas.height = img.height * scaleSize;
@@ -123,8 +170,8 @@
                 <div className="min-h-screen flex flex-col max-w-md mx-auto bg-white shadow-xl">
                     <header className="bg-primary text-white p-4 flex justify-between items-center sticky top-0 z-50">
                         <div className="flex items-center space-x-2">
-                            <i data-lucide="building-2" className="w-6 h-6 text-accent"></i>
-                            <span className="font-bold text-lg">ImmoEstime</span>
+                            {view !== 'home' && <i data-lucide="building-2" className="w-5 h-5 text-accent"></i>}
+                            <span className="font-bold text-lg">{view !== 'home' ? 'Estimo' : ''}</span>
                         </div>
                         {view !== 'home' && (
                             <button onClick={() => setView('home')} className="p-2 hover:bg-slate-800 rounded-full">
@@ -134,18 +181,39 @@
                     </header>
 
                     <main className="flex-1 overflow-y-auto p-4 pb-20">
+                        {/* NOUVEL ÉCRAN D'ACCUEIL */}
                         {view === 'home' && (
-                            <div className="flex flex-col items-center justify-center h-[70vh] space-y-6">
-                                <button onClick={() => { setCurrentClient(getEmptyClient()); setActiveTab('client'); setView('form'); }}
-                                        className="w-full flex items-center justify-center space-x-3 bg-accent text-white py-4 px-6 rounded-xl shadow-lg">
-                                    <i data-lucide="plus-circle" className="w-6 h-6"></i>
-                                    <span className="font-medium text-lg">Nouvelle Estimation</span>
-                                </button>
-                                <button onClick={() => setView('list')}
-                                        className="w-full flex items-center justify-center space-x-3 bg-slate-100 text-slate-700 py-4 px-6 rounded-xl border">
-                                    <i data-lucide="folder-open" className="w-6 h-6"></i>
-                                    <span className="font-medium text-lg">Dossiers ({clients.length})</span>
-                                </button>
+                            <div className="flex flex-col items-center justify-center min-h-[75vh] space-y-10">
+                                
+                                {/* Logo Maison avec Point d'interrogation */}
+                                <div className="flex flex-col items-center space-y-4">
+                                    <div className="relative flex items-center justify-center w-28 h-28 bg-slate-100 rounded-full shadow-sm border border-slate-200">
+                                        <i data-lucide="home" className="w-14 h-14 text-primary"></i>
+                                        <span className="absolute font-extrabold text-3xl text-accent mt-2">?</span>
+                                    </div>
+                                    <div className="text-center">
+                                        <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight">Estimo</h1>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Évaluation sur site</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col w-full space-y-4 w-full max-w-sm px-2">
+                                    <button onClick={() => { setCurrentClient(getEmptyClient()); setActiveTab('client'); setView('form'); }}
+                                            className="w-full flex items-center justify-center space-x-3 bg-accent text-white py-4 px-6 rounded-xl shadow-md">
+                                        <i data-lucide="plus-circle" className="w-6 h-6"></i>
+                                        <span className="font-medium text-lg">Nouveau Dossier</span>
+                                    </button>
+                                    <button onClick={() => setView('list')}
+                                            className="w-full flex items-center justify-center space-x-3 bg-slate-50 text-slate-700 py-4 px-6 rounded-xl border border-slate-200">
+                                        <i data-lucide="folder-open" className="w-6 h-6"></i>
+                                        <span className="font-medium text-lg">Archives ({clients.length})</span>
+                                    </button>
+                                    <a href="https://app.dvf.etalab.gouv.fr/" target="_blank"
+                                            className="w-full flex items-center justify-center space-x-3 bg-primary text-white py-4 px-6 rounded-xl shadow-md">
+                                        <i data-lucide="map" className="w-6 h-6"></i>
+                                        <span className="font-medium text-lg">Base DVF</span>
+                                    </a>
+                                </div>
                             </div>
                         )}
 
@@ -153,9 +221,18 @@
                             <div className="space-y-4">
                                 {clients.map(c => (
                                     <div key={c.id} onClick={() => { setCurrentClient(c); setActiveTab('client'); setView('form'); }} 
-                                         className="bg-white border p-4 rounded-xl shadow-sm cursor-pointer">
+                                         className="bg-white border p-4 rounded-xl shadow-sm cursor-pointer relative pb-14">
                                         <h3 className="font-bold text-slate-800">{c.nom} {c.prenom} <span className="text-xs font-normal text-accent bg-sky-50 px-2 py-0.5 rounded-full ml-1">{c.typeBien}</span></h3>
-                                        <p className="text-xs text-slate-500">{c.adresse} • {c.date}</p>
+                                        <p className="text-xs text-slate-500 mb-2">{c.adresse} • {c.date}</p>
+                                        
+                                        <div className="absolute bottom-3 left-4 right-4 flex space-x-2 border-t pt-3">
+                                            <button onClick={(e) => handleShareText(c, e)} className="flex-1 flex items-center justify-center space-x-1 bg-slate-100 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-200">
+                                                <i data-lucide="share-2" className="w-4 h-4"></i><span>Partager</span>
+                                            </button>
+                                            <button onClick={(e) => handleExportVCard(c, e)} className="flex-1 flex items-center justify-center space-x-1 bg-sky-50 text-accent py-2 rounded-lg text-xs font-bold hover:bg-sky-100">
+                                                <i data-lucide="user-plus" className="w-4 h-4"></i><span>VCard</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
