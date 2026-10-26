@@ -1,18 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estimation Immobilière Pro</title>
-    <!-- Tailwind CSS pour un design épuré et moderne -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1e293b', // Bleu nuit pro
-                        accent: '#0284c7',  // Bleu vif
+                        primary: '#1e293b',
+                        accent: '#0284c7',
                     }
                 }
             }
@@ -27,13 +27,11 @@
 <body class="bg-slate-50 text-slate-800 antialiased font-sans">
     <div id="root"></div>
 
-
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-
         function App() {
-            const [view, setView] = useState('home'); // 'home', 'list', 'form'
+            const [view, setView] = useState('home'); 
             const [clients, setClients] = useState(() => {
                 const saved = localStorage.getItem('immo_clients');
                 return saved ? JSON.parse(saved) : [];
@@ -41,23 +39,20 @@
             const [currentClient, setCurrentClient] = useState(getEmptyClient());
             const [activeTab, setActiveTab] = useState('client');
 
-
             useEffect(() => {
                 localStorage.setItem('immo_clients', JSON.stringify(clients));
             }, [clients]);
 
-
             useEffect(() => {
                 setTimeout(() => lucide.createIcons(), 100);
             }, [view, activeTab]);
-
 
             function getEmptyClient() {
                 return {
                     id: Date.now(),
                     date: new Date().toLocaleDateString('fr-FR'),
                     nom: '', prenom: '', telephone: '', email: '', adresse: '',
-                    // Bien
+                    typeBien: 'Appartement',
                     surfaceHabitable: '', surfaceCarrez: '', annexes: { terrasse: '', balcon: '', jardin: '', cave: '', garage: '' },
                     distribution: { pieces: '', chambres: '', sainte: '', hauteurPlafond: '' },
                     env: { exposition: '', visAVis: '', bruit: '' },
@@ -69,10 +64,9 @@
                     charges: { fonciere: '', copro: '' },
                     copro: { travauxVotes: '', ambiance: '' },
                     projet: { raison: '', delai: '', prixAttendu: '' },
-                    medias: [] // Photos/Videos en base64
+                    medias: []
                 };
             }
-
 
             const handleSave = () => {
                 if (!currentClient.nom && !currentClient.prenom) {
@@ -91,7 +85,6 @@
                 setView('home');
             };
 
-
             const handleMediaUpload = (e) => {
                 const files = Array.from(e.target.files);
                 Promise.all(files.map(file => {
@@ -105,6 +98,13 @@
                 });
             };
 
+            const tabTitles = {
+                client: '1. Informations Client',
+                bien: '2. Superficie & Distribution',
+                technique: '3. Équipements & État',
+                financier: '4. Finances & Projet',
+                medias: '5. Photos & Vidéos'
+            };
 
             return (
                 <div className="min-h-screen flex flex-col max-w-md mx-auto bg-white shadow-xl">
@@ -115,12 +115,12 @@
                             <span className="font-bold text-lg tracking-wide">ImmoEstime</span>
                         </div>
                         {view !== 'home' && (
-                            <button onClick={() => setView('home')} className="p-2 hover:bg-slate-800 rounded-full transition">
+                            <button onClick={() => setView('home')} className="p-2 hover:bg-slate-800 rounded-full transition flex items-center space-x-1 text-xs">
                                 <i data-lucide="home" className="w-5 h-5"></i>
+                                <span>Accueil</span>
                             </button>
                         )}
                     </header>
-
 
                     {/* Main Content */}
                     <main className="flex-1 overflow-y-auto p-4 pb-20">
@@ -148,7 +148,6 @@
                             </div>
                         )}
 
-
                         {/* 2. LISTE DES CLIENTS */}
                         {view === 'list' && (
                             <div className="space-y-4">
@@ -160,7 +159,7 @@
                                         <div key={c.id} onClick={() => { setCurrentClient(c); setActiveTab('client'); setView('form'); }} 
                                              className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center">
                                             <div>
-                                                <h3 className="font-bold text-slate-800">{c.nom} {c.prenom}</h3>
+                                                <h3 className="font-bold text-slate-800">{c.nom} {c.prenom} <span className="text-xs font-normal text-accent bg-sky-50 px-2 py-0.5 rounded-full ml-1">{c.typeBien}</span></h3>
                                                 <p className="text-xs text-slate-500">{c.adresse || 'Adresse non renseignée'} • {c.date}</p>
                                             </div>
                                             <i data-lucide="chevron-right" className="w-5 h-5 text-slate-400"></i>
@@ -169,7 +168,6 @@
                                 )}
                             </div>
                         )}
-
 
                         {/* 3. FORMULAIRE DE SAISIE */}
                         {view === 'form' && (
@@ -193,12 +191,28 @@
                                     ))}
                                 </div>
 
+                                {/* Indicateur clair de l'onglet actif */}
+                                <div className="bg-sky-50 border-l-4 border-accent p-3 rounded-r-xl">
+                                    <h2 className="text-sm font-bold text-sky-900">{tabTitles[activeTab]}</h2>
+                                </div>
 
                                 {/* Contenu des Onglets */}
                                 <div className="space-y-4">
                                     {activeTab === 'client' && (
                                         <div className="space-y-3">
-                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Informations de base</h3>
+                                            <label className="block text-xs font-semibold text-slate-500 uppercase">Type de bien</label>
+                                            <select 
+                                                value={currentClient.typeBien} 
+                                                onChange={e => setCurrentClient({...currentClient, typeBien: e.target.value})} 
+                                                className="w-full p-3 border rounded-xl text-sm bg-white font-medium text-slate-700">
+                                                <option value="Appartement">Appartement</option>
+                                                <option value="Maison">Maison</option>
+                                                <option value="Box / Garage">Box / Garage</option>
+                                                <option value="Terrain">Terrain</option>
+                                                <option value="Commerce / Bureau">Commerce / Bureau</option>
+                                                <option value="Immeuble">Immeuble</option>
+                                            </select>
+
                                             <input type="text" placeholder="Nom" value={currentClient.nom} onChange={e => setCurrentClient({...currentClient, nom: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="text" placeholder="Prénom" value={currentClient.prenom} onChange={e => setCurrentClient({...currentClient, prenom: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="tel" placeholder="Téléphone" value={currentClient.telephone} onChange={e => setCurrentClient({...currentClient, telephone: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
@@ -207,10 +221,8 @@
                                         </div>
                                     )}
 
-
                                     {activeTab === 'bien' && (
                                         <div className="space-y-4">
-                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Superficie & Distribution</h3>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <input type="text" placeholder="Surf. Habitable (m²)" value={currentClient.surfaceHabitable} onChange={e => setCurrentClient({...currentClient, surfaceHabitable: e.target.value})} className="p-3 border rounded-xl text-sm" />
                                                 <input type="text" placeholder="Surf. Carrez (m²)" value={currentClient.surfaceCarrez} onChange={e => setCurrentClient({...currentClient, surfaceCarrez: e.target.value})} className="p-3 border rounded-xl text-sm" />
@@ -225,18 +237,17 @@
                                                 <input type="number" placeholder="Chambres" value={currentClient.distribution.chambres} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, chambres: e.target.value}})} className="p-3 border rounded-xl text-sm" />
                                                 <input type="number" placeholder="Salles d'eau" value={currentClient.distribution.sainte} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, sainte: e.target.value}})} className="p-3 border rounded-xl text-sm" />
                                             </div>
+                                            <input type="text" placeholder="Hauteur sous plafond" value={currentClient.distribution.hauteurPlafond} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, hauteurPlafond: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="text" placeholder="Orientation / Exposition" value={currentClient.env.exposition} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, exposition: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="text" placeholder="Vis-à-vis / Nuisances sonores" value={currentClient.env.bruit} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, bruit: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
                                         </div>
                                     )}
 
-
                                     {activeTab === 'technique' && (
                                         <div className="space-y-4">
-                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Équipements & État</h3>
                                             <input type="text" placeholder="Chauffage (Type, Énergie, Âge)" value={currentClient.chauffage.type} onChange={e => setCurrentClient({...currentClient, chauffage: {...currentClient.chauffage, type: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="text" placeholder="Menuiseries & Isolation" value={currentClient.menuiseries.vitrage} onChange={e => setCurrentClient({...currentClient, menuiseries: {...currentClient.menuiseries, vitrage: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
-                                            <div className="space-y-2 pt-2">
+                                            <div className="space-y-2 pt-2 bg-slate-50 p-3 rounded-xl border">
                                                 <label className="flex items-center space-x-2 text-sm">
                                                     <input type="checkbox" checked={currentClient.equipements.cuisineEquipee} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, cuisineEquipee: e.target.checked}})} className="rounded text-accent w-4 h-4" />
                                                     <span>Cuisine équipée</span>
@@ -255,10 +266,8 @@
                                         </div>
                                     )}
 
-
                                     {activeTab === 'financier' && (
                                         <div className="space-y-4">
-                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Finances & Projet</h3>
                                             <input type="text" placeholder="Taxe foncière (€)" value={currentClient.charges.fonciere} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, fonciere: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="text" placeholder="Charges de copropriété (€/mois)" value={currentClient.charges.copro} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, copro: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
                                             <input type="text" placeholder="Vie de la copro (Travaux votés...)" value={currentClient.copro.travauxVotes} onChange={e => setCurrentClient({...currentClient, copro: {...currentClient.copro, travauxVotes: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
@@ -270,18 +279,27 @@
                                         </div>
                                     )}
 
-
                                     {activeTab === 'medias' && (
                                         <div className="space-y-4">
-                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Photos & Vidéos</h3>
-                                            <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 p-6 rounded-xl cursor-pointer hover:border-accent transition bg-slate-50">
-                                                <i data-lucide="camera" className="w-8 h-8 text-slate-400 mb-2"></i>
-                                                <span className="text-sm font-medium text-slate-600">Prendre une photo ou importer</span>
-                                                <input type="file" accept="image/*,video/*" multiple onChange={handleMediaUpload} className="hidden" />
-                                            </label>
-                                            <div className="grid grid-cols-3 gap-2">
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {/* Bouton Appareil Photo Direct */}
+                                                <label className="flex flex-col items-center justify-center border-2 border-dashed border-accent p-4 rounded-xl cursor-pointer hover:bg-sky-50 transition bg-sky-50/50 text-accent">
+                                                    <i data-lucide="camera" className="w-6 h-6 mb-1"></i>
+                                                    <span className="text-xs font-semibold text-center">Prendre une photo</span>
+                                                    <input type="file" accept="image/*" capture="environment" onChange={handleMediaUpload} className="hidden" />
+                                                </label>
+
+                                                {/* Bouton Galerie / Fichiers */}
+                                                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 p-4 rounded-xl cursor-pointer hover:border-slate-400 transition bg-slate-50 text-slate-600">
+                                                    <i data-lucide="image" className="w-6 h-6 mb-1"></i>
+                                                    <span className="text-xs font-semibold text-center">Importer (Galerie)</span>
+                                                    <input type="file" accept="image/*,video/*" multiple onChange={handleMediaUpload} className="hidden" />
+                                                </label>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-2 pt-2">
                                                 {currentClient.medias.map((m, index) => (
-                                                    <div key={index} className="relative aspect-square bg-slate-100 rounded-lg overflow-hidden border">
+                                                    <div key={index} className="relative aspect-square bg-slate-100 rounded-lg overflow-hidden border shadow-sm">
                                                         {m.type.includes('video') ? (
                                                             <video src={m.url} className="w-full h-full object-cover"></video>
                                                         ) : (
@@ -294,7 +312,6 @@
                                     )}
                                 </div>
 
-
                                 {/* Bouton Enregistrer */}
                                 <button onClick={handleSave} className="w-full bg-accent text-white py-4 rounded-xl shadow-lg hover:bg-sky-700 transition font-medium text-lg flex items-center justify-center space-x-2 mt-6">
                                     <i data-lucide="check" className="w-5 h-5"></i>
@@ -306,7 +323,6 @@
                 </div>
             );
         }
-
 
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
