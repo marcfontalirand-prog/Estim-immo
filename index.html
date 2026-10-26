@@ -1,0 +1,314 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimation Immobilière Pro</title>
+    <!-- Tailwind CSS pour un design épuré et moderne -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e293b', // Bleu nuit pro
+                        accent: '#0284c7',  // Bleu vif
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & Lucide Icons -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans">
+    <div id="root"></div>
+
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+
+        function App() {
+            const [view, setView] = useState('home'); // 'home', 'list', 'form'
+            const [clients, setClients] = useState(() => {
+                const saved = localStorage.getItem('immo_clients');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [currentClient, setCurrentClient] = useState(getEmptyClient());
+            const [activeTab, setActiveTab] = useState('client');
+
+
+            useEffect(() => {
+                localStorage.setItem('immo_clients', JSON.stringify(clients));
+            }, [clients]);
+
+
+            useEffect(() => {
+                setTimeout(() => lucide.createIcons(), 100);
+            }, [view, activeTab]);
+
+
+            function getEmptyClient() {
+                return {
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString('fr-FR'),
+                    nom: '', prenom: '', telephone: '', email: '', adresse: '',
+                    // Bien
+                    surfaceHabitable: '', surfaceCarrez: '', annexes: { terrasse: '', balcon: '', jardin: '', cave: '', garage: '' },
+                    distribution: { pieces: '', chambres: '', sainte: '', hauteurPlafond: '' },
+                    env: { exposition: '', visAVis: '', bruit: '' },
+                    chauffage: { type: '', energie: '', age: '' },
+                    menuiseries: { vitrage: '', fenetres: '', volets: '', isolation: '' },
+                    equipements: { cuisineEquipee: false, stationnement: false, borneRecharge: false },
+                    travaux: { nature: '', dates: '', factures: false },
+                    etat: { humidite: false, fissures: false, toiture: '', notesEtat: '' },
+                    charges: { fonciere: '', copro: '' },
+                    copro: { travauxVotes: '', ambiance: '' },
+                    projet: { raison: '', delai: '', prixAttendu: '' },
+                    medias: [] // Photos/Videos en base64
+                };
+            }
+
+
+            const handleSave = () => {
+                if (!currentClient.nom && !currentClient.prenom) {
+                    alert('Veuillez renseigner au moins le nom ou le prénom du client.');
+                    return;
+                }
+                const existingIndex = clients.findIndex(c => c.id === currentClient.id);
+                if (existingIndex >= 0) {
+                    const updated = [...clients];
+                    updated[existingIndex] = currentClient;
+                    setClients(updated);
+                } else {
+                    setClients([currentClient, ...clients]);
+                }
+                alert('Estimation enregistrée avec succès !');
+                setView('home');
+            };
+
+
+            const handleMediaUpload = (e) => {
+                const files = Array.from(e.target.files);
+                Promise.all(files.map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (uploadEvent) => resolve({ type: file.type, url: uploadEvent.target.result });
+                        reader.readAsDataURL(file);
+                    });
+                })).then(newMedias => {
+                    setCurrentClient(prev => ({ ...prev, medias: [...prev.medias, ...newMedias] }));
+                });
+            };
+
+
+            return (
+                <div className="min-h-screen flex flex-col max-w-md mx-auto bg-white shadow-xl">
+                    {/* Header */}
+                    <header className="bg-primary text-white p-4 flex justify-between items-center sticky top-0 z-50">
+                        <div className="flex items-center space-x-2">
+                            <i data-lucide="building-2" className="w-6 h-6 text-accent"></i>
+                            <span className="font-bold text-lg tracking-wide">ImmoEstime</span>
+                        </div>
+                        {view !== 'home' && (
+                            <button onClick={() => setView('home')} className="p-2 hover:bg-slate-800 rounded-full transition">
+                                <i data-lucide="home" className="w-5 h-5"></i>
+                            </button>
+                        )}
+                    </header>
+
+
+                    {/* Main Content */}
+                    <main className="flex-1 overflow-y-auto p-4 pb-20">
+                        {/* 1. ÉCRAN ACCUEIL */}
+                        {view === 'home' && (
+                            <div className="flex flex-col items-center justify-center h-[75vh] space-y-8">
+                                <div className="text-center space-y-2">
+                                    <h1 className="text-2xl font-bold text-slate-800">Estimation sur site</h1>
+                                    <p className="text-sm text-slate-500">Accompagnement professionnel pour vos visites</p>
+                                </div>
+                                <div className="flex flex-col w-full space-y-4 px-6">
+                                    <button 
+                                        onClick={() => { setCurrentClient(getEmptyClient()); setActiveTab('client'); setView('form'); }}
+                                        className="flex items-center justify-center space-x-3 bg-accent text-white py-4 px-6 rounded-xl shadow-lg hover:bg-sky-700 transition font-medium text-lg">
+                                        <i data-lucide="plus-circle" className="w-6 h-6"></i>
+                                        <span>Nouveau Client</span>
+                                    </button>
+                                    <button 
+                                        onClick={() => setView('list')}
+                                        className="flex items-center justify-center space-x-3 bg-slate-100 text-slate-700 py-4 px-6 rounded-xl hover:bg-slate-200 transition font-medium text-lg">
+                                        <i data-lucide="folder-open" className="w-6 h-6"></i>
+                                        <span>Anciens Clients ({clients.length})</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+
+                        {/* 2. LISTE DES CLIENTS */}
+                        {view === 'list' && (
+                            <div className="space-y-4">
+                                <h2 className="text-xl font-bold text-slate-800 mb-4">Estimations Enregistrées</h2>
+                                {clients.length === 0 ? (
+                                    <p className="text-slate-400 text-center py-10">Aucun client enregistré.</p>
+                                ) : (
+                                    clients.map(c => (
+                                        <div key={c.id} onClick={() => { setCurrentClient(c); setActiveTab('client'); setView('form'); }} 
+                                             className="bg-white border border-slate-200 p-4 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center">
+                                            <div>
+                                                <h3 className="font-bold text-slate-800">{c.nom} {c.prenom}</h3>
+                                                <p className="text-xs text-slate-500">{c.adresse || 'Adresse non renseignée'} • {c.date}</p>
+                                            </div>
+                                            <i data-lucide="chevron-right" className="w-5 h-5 text-slate-400"></i>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+
+                        {/* 3. FORMULAIRE DE SAISIE */}
+                        {view === 'form' && (
+                            <div className="space-y-6">
+                                {/* Navigation par onglets */}
+                                <div className="flex overflow-x-auto space-x-2 pb-2 border-b border-slate-100 no-scrollbar">
+                                    {[
+                                        { id: 'client', label: 'Client', icon: 'user' },
+                                        { id: 'bien', label: 'Bien', icon: 'home' },
+                                        { id: 'technique', label: 'Technique', icon: 'cpu' },
+                                        { id: 'financier', label: 'Financier', icon: 'euro' },
+                                        { id: 'medias', label: 'Médias', icon: 'camera' }
+                                    ].map(tab => (
+                                        <button 
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`flex items-center space-x-1 px-3 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition ${activeTab === tab.id ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                                            <i data-lucide={tab.icon} className="w-4 h-4"></i>
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+
+                                {/* Contenu des Onglets */}
+                                <div className="space-y-4">
+                                    {activeTab === 'client' && (
+                                        <div className="space-y-3">
+                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Informations de base</h3>
+                                            <input type="text" placeholder="Nom" value={currentClient.nom} onChange={e => setCurrentClient({...currentClient, nom: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Prénom" value={currentClient.prenom} onChange={e => setCurrentClient({...currentClient, prenom: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="tel" placeholder="Téléphone" value={currentClient.telephone} onChange={e => setCurrentClient({...currentClient, telephone: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="email" placeholder="Email" value={currentClient.email} onChange={e => setCurrentClient({...currentClient, email: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Adresse du bien" value={currentClient.adresse} onChange={e => setCurrentClient({...currentClient, adresse: e.target.value})} className="w-full p-3 border rounded-xl text-sm" />
+                                        </div>
+                                    )}
+
+
+                                    {activeTab === 'bien' && (
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Superficie & Distribution</h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="text" placeholder="Surf. Habitable (m²)" value={currentClient.surfaceHabitable} onChange={e => setCurrentClient({...currentClient, surfaceHabitable: e.target.value})} className="p-3 border rounded-xl text-sm" />
+                                                <input type="text" placeholder="Surf. Carrez (m²)" value={currentClient.surfaceCarrez} onChange={e => setCurrentClient({...currentClient, surfaceCarrez: e.target.value})} className="p-3 border rounded-xl text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <input type="text" placeholder="Terrasse (m²)" value={currentClient.annexes.terrasse} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, terrasse: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <input type="text" placeholder="Balcon (m²)" value={currentClient.annexes.balcon} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, balcon: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <input type="text" placeholder="Jardin (m²)" value={currentClient.annexes.jardin} onChange={e => setCurrentClient({...currentClient, annexes: {...currentClient.annexes, jardin: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <input type="number" placeholder="Pièces" value={currentClient.distribution.pieces} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, pieces: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <input type="number" placeholder="Chambres" value={currentClient.distribution.chambres} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, chambres: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <input type="number" placeholder="Salles d'eau" value={currentClient.distribution.sainte} onChange={e => setCurrentClient({...currentClient, distribution: {...currentClient.distribution, sainte: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                            </div>
+                                            <input type="text" placeholder="Orientation / Exposition" value={currentClient.env.exposition} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, exposition: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Vis-à-vis / Nuisances sonores" value={currentClient.env.bruit} onChange={e => setCurrentClient({...currentClient, env: {...currentClient.env, bruit: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                        </div>
+                                    )}
+
+
+                                    {activeTab === 'technique' && (
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Équipements & État</h3>
+                                            <input type="text" placeholder="Chauffage (Type, Énergie, Âge)" value={currentClient.chauffage.type} onChange={e => setCurrentClient({...currentClient, chauffage: {...currentClient.chauffage, type: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Menuiseries & Isolation" value={currentClient.menuiseries.vitrage} onChange={e => setCurrentClient({...currentClient, menuiseries: {...currentClient.menuiseries, vitrage: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <div className="space-y-2 pt-2">
+                                                <label className="flex items-center space-x-2 text-sm">
+                                                    <input type="checkbox" checked={currentClient.equipements.cuisineEquipee} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, cuisineEquipee: e.target.checked}})} className="rounded text-accent w-4 h-4" />
+                                                    <span>Cuisine équipée</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 text-sm">
+                                                    <input type="checkbox" checked={currentClient.equipements.stationnement} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, stationnement: e.target.checked}})} className="rounded text-accent w-4 h-4" />
+                                                    <span>Stationnement / Garage</span>
+                                                </label>
+                                                <label className="flex items-center space-x-2 text-sm">
+                                                    <input type="checkbox" checked={currentClient.equipements.borneRecharge} onChange={e => setCurrentClient({...currentClient, equipements: {...currentClient.equipements, borneRecharge: e.target.checked}})} className="rounded text-accent w-4 h-4" />
+                                                    <span>Borne de recharge VE</span>
+                                                </label>
+                                            </div>
+                                            <textarea placeholder="Travaux réalisés (Nature, dates, factures)" value={currentClient.travaux.nature} onChange={e => setCurrentClient({...currentClient, travaux: {...currentClient.travaux, nature: e.target.value}})} className="w-full p-3 border rounded-xl text-sm h-20"></textarea>
+                                            <textarea placeholder="État général (Humidité, fissures, toiture)" value={currentClient.etat.notesEtat} onChange={e => setCurrentClient({...currentClient, etat: {...currentClient.etat, notesEtat: e.target.value}})} className="w-full p-3 border rounded-xl text-sm h-20"></textarea>
+                                        </div>
+                                    )}
+
+
+                                    {activeTab === 'financier' && (
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Finances & Projet</h3>
+                                            <input type="text" placeholder="Taxe foncière (€)" value={currentClient.charges.fonciere} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, fonciere: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Charges de copropriété (€/mois)" value={currentClient.charges.copro} onChange={e => setCurrentClient({...currentClient, charges: {...currentClient.charges, copro: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Vie de la copro (Travaux votés...)" value={currentClient.copro.travauxVotes} onChange={e => setCurrentClient({...currentClient, copro: {...currentClient.copro, travauxVotes: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <input type="text" placeholder="Raison de la vente" value={currentClient.projet.raison} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, raison: e.target.value}})} className="w-full p-3 border rounded-xl text-sm" />
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="text" placeholder="Délai souhaité" value={currentClient.projet.delai} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, delai: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                                <input type="text" placeholder="Prix attendu (€)" value={currentClient.projet.prixAttendu} onChange={e => setCurrentClient({...currentClient, projet: {...currentClient.projet, prixAttendu: e.target.value}})} className="p-3 border rounded-xl text-sm" />
+                                            </div>
+                                        </div>
+                                    )}
+
+
+                                    {activeTab === 'medias' && (
+                                        <div className="space-y-4">
+                                            <h3 className="font-semibold text-sm text-slate-500 uppercase tracking-wider">Photos & Vidéos</h3>
+                                            <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 p-6 rounded-xl cursor-pointer hover:border-accent transition bg-slate-50">
+                                                <i data-lucide="camera" className="w-8 h-8 text-slate-400 mb-2"></i>
+                                                <span className="text-sm font-medium text-slate-600">Prendre une photo ou importer</span>
+                                                <input type="file" accept="image/*,video/*" multiple onChange={handleMediaUpload} className="hidden" />
+                                            </label>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {currentClient.medias.map((m, index) => (
+                                                    <div key={index} className="relative aspect-square bg-slate-100 rounded-lg overflow-hidden border">
+                                                        {m.type.includes('video') ? (
+                                                            <video src={m.url} className="w-full h-full object-cover"></video>
+                                                        ) : (
+                                                            <img src={m.url} className="w-full h-full object-cover" />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+
+                                {/* Bouton Enregistrer */}
+                                <button onClick={handleSave} className="w-full bg-accent text-white py-4 rounded-xl shadow-lg hover:bg-sky-700 transition font-medium text-lg flex items-center justify-center space-x-2 mt-6">
+                                    <i data-lucide="check" className="w-5 h-5"></i>
+                                    <span>Enregistrer l'estimation</span>
+                                </button>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
